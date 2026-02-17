@@ -31,6 +31,25 @@ The runtime operates on a memory arena system with three primary segments:
 - **Level**: Assets and state loaded for a single level.
 - **Frame**: Temporary memory reset every tick.
 
+## Features
+
+### Text Rendering
+- 3x5 pixel font supporting digits (0-9), uppercase letters (A-Z), and special characters (`:`, `/`, space)
+- `FrameBuffer::draw_text()` for string rendering
+- `FrameBuffer::draw_u32()` for fixed-width numeric display
+
+### Debug Overlay (Optional)
+Enable with `--features debug_overlay`:
+```bash
+cargo run --features debug_overlay
+```
+
+Displays real-time metrics:
+- **FPS**: Frames per second
+- **G**: Global arena usage (bytes)
+- **L**: Level arena usage (bytes)
+- **F**: Frame arena usage (bytes)
+
 ## Documentation
 
 See the `/docs` directory for detailed architecture and ADRs.

@@ -12,8 +12,7 @@ To foster architectural discipline, we need hard limits on output. Modern hardwa
 We will enforce the following hardware limits:
 - **Resolution**: 160 × 144 pixels. This matches popular handheld consoles from the early 90s.
 - **Color Depth**: 4-color palette (2 bits per pixel).
-- **Framebuffer**: The total VRAM/Framebuffer is limited to 5,760 bytes (160 * 144 / 4 pixels per byte).
-- **Bit Packing**: To optimize memory, 4 pixels are packed into a single byte. Each pixel uses 2 bits, with offsets calculated as `(index % 4) * 2`.
+- **Framebuffer**: The total VRAM/Framebuffer will be limited to 5,760 bytes (160 * 144 / 4 pixels per byte).
 - **Tile Size**: Standardized at 16 x 16 pixels.
 
 ## Consequences

@@ -40,3 +40,20 @@ The runtime abstracts host hardware into a simulated 90s-era console:
 - **Input**: Bitmask representing D-pad and 4 buttons.
 - **Screen**: 160x144 indexed 2-bit buffer (4 pixels per byte).
 - **Memory**: 1 MB fixed pool with hardware-enforced boundaries.
+
+## Renderer Module
+
+The renderer provides low-level drawing primitives:
+- **FrameBuffer**: 2-bit packed pixel buffer (5,760 bytes)
+- **Font System**: 3x5 pixel glyphs for text rendering
+  - `draw_text()`: String rendering
+  - `draw_char()`: Single character rendering
+  - `draw_u32()`: Fixed-width numeric display
+- **Color Palette**: 4-color Game Boy-inspired palette
+
+## Runtime Module
+
+The runtime module provides development and debugging tools:
+- **Debug Overlay** (feature-gated): Real-time FPS and memory usage display
+- Compile-time conditional via `#[cfg(feature = "debug_overlay")]`
+- Zero runtime cost when disabled

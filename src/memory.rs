@@ -85,7 +85,7 @@ pub struct RuntimeMemory {
 }
 
 impl RuntimeMemory {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             global: Arena::new(),
             level: Arena::new(),
