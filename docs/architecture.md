@@ -38,4 +38,5 @@ Entities are managed in fixed-capacity pools. There is no `Vec<Entity>`. Instead
 
 The runtime abstracts host hardware into a simulated 90s-era console:
 - **Input**: Bitmask representing D-pad and 4 buttons.
-- **Screen**: 160x144 indexed 2-bit buffer.
+- **Screen**: 160x144 indexed 2-bit buffer (4 pixels per byte).
+- **Memory**: 1 MB fixed pool with hardware-enforced boundaries.

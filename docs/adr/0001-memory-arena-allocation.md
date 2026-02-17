@@ -18,7 +18,7 @@ We will use a fixed memory arena system for all runtime allocations.
   - **Level Arena**: (512 KB) Level-specific data, reset on level transition.
   - **Frame Arena**: (256 KB) Scratchpad for per-frame calculations, reset every tick.
 - Dynamic containers from the standard library (e.g., `Vec`, `HashMap`) are forbidden in the core runtime logic.
-- The `Arena` implementation will use a simple pointer-bump allocator pattern.
+- The `Arena` implementation will use a simple pointer-bump allocator pattern, supporting both single object allocation (`alloc`) and contiguous slice allocation (`alloc_slice`).
 
 ## Consequences
 - **Positive**: Zero heap fragmentation, deterministic allocation performance, explicit memory monitoring, and forced architectural discipline.
