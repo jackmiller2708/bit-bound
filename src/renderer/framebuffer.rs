@@ -1,4 +1,4 @@
-use crate::renderer::font;
+use crate::renderer::font::{Glyph, get_glyph};
 
 pub const PALETTE: [u32; 4] = [
     0xFF0F380F, // Darkest
@@ -6,6 +6,13 @@ pub const PALETTE: [u32; 4] = [
 ];
 pub const WIDTH: usize = 160;
 pub const HEIGHT: usize = 144;
+
+pub const FONT_WIDTH: usize = 3;
+pub const FONT_HEIGHT: usize = 5;
+pub const FONT_SPACING: usize = 1;
+pub const LINE_HEIGHT: usize = 6;
+
+pub const FONT_ADVANCE: usize = FONT_WIDTH + FONT_SPACING;
 
 const PIXELS: usize = WIDTH * HEIGHT;
 const BUFFER_SIZE: usize = PIXELS / 4; // 4 pixels per byte
@@ -73,26 +80,30 @@ impl FrameBuffer {
         }
     }
 
-    pub fn draw_char(&mut self, x: usize, y: usize, glyph: &font::Glyph, color: u8) {
-        for (row_index, row_bits) in glyph.rows.iter().enumerate() {
-            for col in 0..3 {
-                if (row_bits >> (2 - col)) & 1 == 1 {
-                    self.set_pixel(x + col, y + row_index, color);
+    pub fn draw_char(&mut self, x: usize, y: usize, glyph: &Glyph, color: u8) {
+        for row in 0..FONT_HEIGHT {
+            let bits = glyph.rows[row];
+
+            for col in 0..FONT_WIDTH {
+                if (bits >> (7 - col)) & 1 == 1 {
+                    self.set_pixel(x + col, y + row, color);
                 }
             }
         }
     }
 
-    pub fn draw_text(&mut self, x: usize, y: usize, text: &str, color: u8) {
-        for (i, c) in text.chars().enumerate() {
-            if let Some(glyph) = font::get_glyph(c) {
-                self.draw_char(x + i * 4, y, glyph, color);
+    pub fn draw_text(&mut self, mut x: usize, y: usize, text: &str, color: u8) {
+        for c in text.chars() {
+            if let Some(glyph) = get_glyph(c) {
+                self.draw_char(x, y, glyph, color);
             }
+
+            x += FONT_ADVANCE;
         }
     }
 
     pub fn draw_u32(&mut self, mut x: usize, y: usize, value: u32, digits: usize, color: u8) {
-        let mut temp = [0u8; 10]; // max 10 digits
+        let mut temp = [0u8; 10];
         let mut n = value;
 
         for i in (0..digits).rev() {
@@ -103,11 +114,11 @@ impl FrameBuffer {
         for i in 0..digits {
             let c = (b'0' + temp[i]) as char;
 
-            if let Some(glyph) = font::get_glyph(c) {
+            if let Some(glyph) = get_glyph(c) {
                 self.draw_char(x, y, glyph, color);
             }
 
-            x += 4; // glyph width
+            x += FONT_ADVANCE;
         }
     }
 }

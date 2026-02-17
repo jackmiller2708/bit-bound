@@ -1,11 +1,16 @@
-use crate::renderer::framebuffer::FrameBuffer;
+use crate::renderer::framebuffer::{FONT_ADVANCE, FrameBuffer};
 
-const DEBUG_Y: usize = 2;
+const DEBUG_Y: usize = 1;
+const DEBUG_X_PADDING: usize = 2;
 
-const FPS_X: usize = 6;
-const GLOBAL_X: usize = 46;
-const LEVEL_X: usize = 86;
-const FRAME_X: usize = 126;
+const COL_FPS: usize = 0;
+const COL_GLOBAL: usize = 7;
+const COL_LEVEL: usize = 12;
+const COL_FRAME: usize = 17;
+
+fn col_to_x(col: usize) -> usize {
+    DEBUG_X_PADDING + col * FONT_ADVANCE
+}
 
 pub struct DebugInfo {
     pub frame_us: u32,
@@ -21,13 +26,33 @@ pub fn render_debug_overlay(framebuffer: &mut FrameBuffer, info: &DebugInfo) {
         0
     };
 
-    framebuffer.draw_text(FPS_X, DEBUG_Y, "FPS", 3);
-    framebuffer.draw_text(GLOBAL_X, DEBUG_Y, "G", 3);
-    framebuffer.draw_text(LEVEL_X, DEBUG_Y, "L", 3);
-    framebuffer.draw_text(FRAME_X, DEBUG_Y, "F", 3);
+    // Labels
+    framebuffer.draw_text(col_to_x(COL_FPS), DEBUG_Y, "FPS", 2);
+    framebuffer.draw_text(col_to_x(COL_GLOBAL), DEBUG_Y, "G", 2);
+    framebuffer.draw_text(col_to_x(COL_LEVEL), DEBUG_Y, "L", 2);
+    framebuffer.draw_text(col_to_x(COL_FRAME), DEBUG_Y, "F", 2);
 
-    framebuffer.draw_u32(FPS_X + 12, DEBUG_Y, fps, 3, 3);
-    framebuffer.draw_u32(GLOBAL_X + 4, DEBUG_Y, info.global_used, 3, 3);
-    framebuffer.draw_u32(LEVEL_X + 4, DEBUG_Y, info.level_used, 3, 3);
-    framebuffer.draw_u32(FRAME_X + 4, DEBUG_Y, info.frame_used, 3, 3);
+    // Values
+    framebuffer.draw_u32(col_to_x(COL_FPS) + 3 * FONT_ADVANCE, DEBUG_Y, fps, 3, 3);
+    framebuffer.draw_u32(
+        col_to_x(COL_GLOBAL) + FONT_ADVANCE,
+        DEBUG_Y,
+        info.global_used,
+        3,
+        3,
+    );
+    framebuffer.draw_u32(
+        col_to_x(COL_LEVEL) + FONT_ADVANCE,
+        DEBUG_Y,
+        info.level_used,
+        3,
+        3,
+    );
+    framebuffer.draw_u32(
+        col_to_x(COL_FRAME) + FONT_ADVANCE,
+        DEBUG_Y,
+        info.frame_used,
+        3,
+        3,
+    );
 }
