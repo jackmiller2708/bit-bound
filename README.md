@@ -38,6 +38,12 @@ The runtime operates on a memory arena system with three primary segments:
 - `FrameBuffer::draw_text()` for string rendering
 - `FrameBuffer::draw_u32()` for fixed-width numeric display
 
+### Sprite Rendering
+- `FrameBuffer::draw_sprite()` for rendering arbitrary-size sprites
+- Supports transparency (color 0 is transparent)
+- Automatic bounds checking for safe rendering
+- Signed coordinate support for off-screen positioning
+
 ### Debug Overlay (Optional)
 Enable with `--features debug_overlay`:
 ```bash

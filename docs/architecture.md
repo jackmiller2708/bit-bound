@@ -49,6 +49,10 @@ The renderer provides low-level drawing primitives:
   - `draw_text()`: String rendering
   - `draw_char()`: Single character rendering
   - `draw_u32()`: Fixed-width numeric display
+- **Sprite System**: Arbitrary-size sprite rendering with transparency
+  - `draw_sprite()`: Renders sprites with bounds checking and transparency support
+  - Supports variable width/height sprites
+  - Color 0 treated as transparent
 - **Color Palette**: 4-color Game Boy-inspired palette
 
 ## Runtime Module

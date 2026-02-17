@@ -121,4 +121,31 @@ impl FrameBuffer {
             x += FONT_ADVANCE;
         }
     }
+
+    pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &[u8], width: usize, height: usize) {
+        for row in 0..height {
+            for col in 0..width {
+                let pixel = sprite[row * width + col];
+
+                // Skip transparent
+                if pixel == 0 {
+                    continue;
+                }
+
+                let sx = x + col as i32;
+                let sy = y + row as i32;
+
+                // Bounds check
+                if sx < 0 || sy < 0 {
+                    continue;
+                }
+
+                if sx >= WIDTH as i32 || sy >= HEIGHT as i32 {
+                    continue;
+                }
+
+                self.set_pixel(sx as usize, sy as usize, pixel);
+            }
+        }
+    }
 }
