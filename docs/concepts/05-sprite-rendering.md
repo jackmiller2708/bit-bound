@@ -2,7 +2,10 @@
 
 > **Prerequisites**: Read [Foundations](00-foundations.md) first — especially the sections on pixels, framebuffers, and what a sprite is.
 >
-> **Related ADR**: [0010 — Sprite Rendering System](../adr/0010-sprite-rendering-system.md)
+> **Related ADRs**:
+> - [0010 — Sprite Rendering System (Deprecated)](../adr/0010-sprite-rendering-system.md)
+> - [0011 — Binary Asset Pipeline](../adr/0011-binary-asset-pipeline.md)
+> - [0012 — Tile-Based Sprite Rendering](../adr/0012-tile-based-sprite-rendering.md)
 
 ---
 
@@ -54,123 +57,114 @@ Engineers at Texas Instruments in the late 1970s coined the term. They were desi
 
 ### Sprites vs. Images in High-Level Environments
 
-| Feature      | Typical Framework             | bit-bound (Sprites)                                         |
-| ------------ | ----------------------------- | ----------------------------------------------------------- |
-| Format       | PNG, JPEG, SVG, WebP          | PNG source → indexed byte array (generated at build time)   |
-| Colors       | 16.7 million+                 | 4                                                           |
-| Loading      | Runtime decodes file          | Build script converts PNG → Rust code, compiled into binary |
-| Positioning  | Layout engine / draw calls    | Manual pixel-by-pixel copy                                  |
-| Transparency | Alpha channel (0–255 opacity) | Color 0 = transparent (binary: visible or not)              |
-| Size         | Arbitrary, scaled by browser  | Fixed, pixel-perfect                                        |
+| Feature      | Typical Framework             | bit-bound (Sprites)                                     |
+| ------------ | ----------------------------- | ------------------------------------------------------- |
+| Format       | PNG, JPEG, SVG, WebP          | PNG source → binary `.2bpp` (via `spritec` tool)        |
+| Colors       | 16.7 million+                 | 4                                                       |
+| Loading      | Runtime decodes file          | Tool converts PNG → Binary, loaded via `include_bytes!` |
+| Positioning  | Layout engine / draw calls    | Manual tile-based rendering                             |
+| Transparency | Alpha channel (0–255 opacity) | Color 0 = transparent (binary: visible or not)          |
+| Size         | Arbitrary, scaled by browser  | Padded to 8×8 tile multiples                            |
 
 ---
 
-## How Sprite Data Is Stored
+## How Sprite Data Is Stored (2bpp Planar)
 
-### Row-Major Order
+While humans find flat grids easy to read, computers (especially constrained hardware) often use **bit-packing** to save space. In BitBound, we use the **GameBoy-style 2bpp planar format**.
 
-The sprite grid above has 8 columns and 8 rows = 64 pixels. These are stored as a **flat, one-dimensional array** in memory (not a 2D grid). The pixels are listed **row by row**, left to right, top to bottom. This is called **row-major order** (see [FrameBuffer & Bit-Packing](04-framebuffer-bit-packing.md) for more on flat vs. 2D arrays):
+### Why Not 1 Byte Per Pixel?
 
-```rust
-const FACE: [u8; 64] = [
-    // Row 0 (top row)
-    0, 0, 3, 3, 3, 3, 0, 0,
-    // Row 1
-    0, 3, 1, 1, 1, 1, 3, 0,
-    // Row 2 (eyes)
-    3, 1, 2, 1, 1, 2, 1, 3,
-    // Row 3
-    3, 1, 1, 1, 1, 1, 1, 3,
-    // Row 4 (mouth)
-    3, 1, 1, 2, 2, 1, 1, 3,
-    // Row 5
-    3, 1, 1, 1, 1, 1, 1, 3,
-    // Row 6
-    0, 3, 1, 1, 1, 1, 3, 0,
-    // Row 7 (bottom row)
-    0, 0, 3, 3, 3, 3, 0, 0,
-];
+If we use one `u8` (8 bits) per pixel, but only have 4 colors (which fit in 2 bits), we are wasting 6 bits (75%) of every byte!
 
-const FACE_WIDTH: usize = 8;
-const FACE_HEIGHT: usize = 8;
-```
+| Color Index | Binary | u8 Binary  | Wasted Space |
+| ----------- | ------ | ---------- | ------------ |
+| 0           | `00`   | `00000000` | 6 bits       |
+| 3           | `11`   | `00000011` | 6 bits       |
 
-### Why Is It Flat?
+By packing pixels together, we can store 4 pixels in a single byte (or 64 pixels in 16 bytes), cutting our asset size **in half**.
 
-In many languages, you'd naturally use a 2D array (an array of arrays). But in memory, a 2D array is typically an array of pointers to other arrays — the rows could be scattered across different memory locations. A flat array is one **contiguous block** in memory, which is faster for the CPU to read sequentially (it can prefetch the next bytes because they're adjacent).
+### Tile-Based Layout
 
-To access pixel (col, row) in a flat array:
+Sprites are divided into **8×8 pixel tiles**. 
+- A 16×16 sprite is a 2×2 grid of tiles.
+- A 35×16 sprite is padded to 40×16 (a 5×2 grid of tiles).
 
-```
-index = row * width + col
-```
+Each tile is exactly **16 bytes**. The data is a raw stream of these 16-byte blocks, stored in row-major order (left-to-right, then top-to-bottom).
 
-For example, the right eye at column 5, row 2:
-```
-index = 2 * 8 + 5 = 21
-FACE[21] = 2    ← yep, that's the dark "eye" color
-```
+### Planar Bitplanes (The Technical Part)
 
-### Why `u8` Instead of 2 Bits?
+Inside a single 16-byte tile, chaque row of 8 pixels is encoded using **2 bytes**. These are called "bitplanes":
+1.  **Low Plane (Byte 0)**: Stores the low bit (bit 0) of the index for all 8 pixels.
+2.  **High Plane (Byte 1)**: Stores the high bit (bit 1) of the index for all 8 pixels.
 
-Wait — if we only have 4 colors (0–3), and those fit in 2 bits, why is each pixel a full `u8` (8 bits)?
+To get the color of the first pixel in a row:
+- Look at bit 7 of the Low Plane byte.
+- Look at bit 7 of the High Plane byte.
+- Combine them: `(HighBit << 1) | LowBit`.
 
-Because the sprite data is an **intermediate format** that's easy to inspect and debug. The bit-packing happens in the **framebuffer** (where memory savings matter). The sprite is a compile-time constant — generated by `build.rs` from a PNG export and baked into the binary. The small memory overhead of using `u8` per pixel in this format doesn't matter much, and it makes the generated code easy to verify:
+You can read more about the exact layout in [Asset Pipeline Specification](../sprite_format.md).
+
+---
+
+## The Sprite Struct
+
+In our engine, a sprite isn't just a raw slice of bytes; it's a structured piece of metadata:
 
 ```rust
-// Generated by build.rs — each number maps directly to a palette index:
-0, 3, 1, 1, 1, 1, 3, 0,
-
-// This would be unreadable (4 pixels packed per byte):
-0b01_11_01_00, 0b00_01_11_01,
+pub struct Sprite {
+    pub width: usize,   // Actual width in pixels (e.g., 35)
+    pub height: usize,  // Actual height in pixels (e.g., 16)
+    pub tiles_x: usize, // Width in 8px tiles (e.g., 5)
+    pub tiles_y: usize, // Height in 8px tiles (e.g., 2)
+    pub data: &'static [u8], // The raw 2bpp binary data
+}
 ```
-
-The conversion to bit-packed format happens when `set_pixel` writes each sprite pixel into the framebuffer.
 
 ---
 
 ## How a Sprite Gets Drawn Onto the Screen
 
-When you call `draw_sprite(x, y, &FACE, 8, 8)`, the renderer needs to copy every non-transparent pixel from the sprite array into the framebuffer at the correct position.
+The engine uses a two-step process to render complex sprites.
 
-### The Full Algorithm — Step by Step
+### Step 1: `draw_tile`
+
+The core rendering primitive is `draw_tile`. It decodes the complex "planar" format for a single 8×8 block and stamps it on the screen:
 
 ```rust
-pub fn draw_sprite(
-    &mut self,
-    x: i32,           // Where to place the sprite on screen (column)
-    y: i32,           // Where to place the sprite on screen (row)
-    sprite: &[u8],    // The sprite pixel data
-    width: usize,     // Sprite width in pixels
-    height: usize,    // Sprite height in pixels
-) {
-    // Loop through every pixel in the sprite
-    for row in 0..height {
-        for col in 0..width {
-            // --- Step 1: Read the color from the sprite data ---
-            let color = sprite[row * width + col];
+pub fn draw_tile(&mut self, x: i32, y: i32, tile_data: &[u8]) {
+    for row in 0..8 {
+        // Read the two bitplanes for this row
+        let low = tile_data[row * 2];
+        let high = tile_data[row * 2 + 1];
 
-            // --- Step 2: Skip transparent pixels ---
-            if color == 0 {
-                continue;  // Don't draw anything — leave the background visible
+        for col in 0..8 {
+            // Combine bits to get the color index (0-3)
+            let bit = 7 - col;
+            let color = ((low >> bit) & 1) | (((high >> bit) & 1) << 1);
+
+            // Skip transparent (index 0) and clip to screen
+            if color != 0 {
+                self.set_pixel(x + col, y + row, color);
             }
+        }
+    }
+}
+```
 
-            // --- Step 3: Calculate screen position ---
-            let screen_x = x + col as i32;
-            let screen_y = y + row as i32;
+### Step 2: `draw_sprite`
 
-            // --- Step 4: Clip to screen bounds ---
-            if screen_x < 0 || screen_x >= 160 {
-                continue;  // Off the left or right edge — skip
-            }
-            if screen_y < 0 || screen_y >= 144 {
-                continue;  // Off the top or bottom edge — skip
-            }
+The high-level `draw_sprite` method simply iterates over the sprite's tile grid and calls `draw_tile` for each one:
 
-            // --- Step 5: Write to the framebuffer ---
-            let pixel_index = screen_y as usize * 160 + screen_x as usize;
-            self.set_pixel(pixel_index, color);
-            // set_pixel handles the bit-packing internally
+```rust
+pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &Sprite) {
+    for ty in 0..sprite.tiles_y {
+        for tx in 0..sprite.tiles_x {
+            // Find where this tile starts in the binary data
+            let offset = (ty * sprite.tiles_x + tx) * 16;
+            let tile_data = &sprite.data[offset..offset + 16];
+
+            // Render the tile at the correct offset
+            self.draw_tile(x + (tx * 8), y + (ty * 8), tile_data);
         }
     }
 }
@@ -275,57 +269,20 @@ The sprite position uses `i32` (a signed 32-bit integer that can be negative) in
 Let's connect the dots from a PNG file on disk to what the player actually sees:
 
 ```
-1. DESIGN TIME: Artist exports sprites as PNG files using the
-   4-color Game Boy palette (RGBA values)
-   ┌─────────────────────────────────┐
-   │ assets/spaceship_0.png  (35×16) │
-   │ assets/spaceship_1.png  (35×16) │
-   └─────────────────────────────────┘
-              │
-              ▼
-2. BUILD TIME: build.rs reads each PNG, maps RGBA pixels to
-   palette indices (0–3), and generates src/sprites.rs
-   ┌──────────────────────────────────────────────────┐
-   │ [0,0,0,0, 255]  → panic (unexpected color)      │
-   │ [0,0,0,0,   0]  → 0  (transparent)              │
-   │ [15,56,15, 255]  → 1  (darkest green)            │
-   │ [48,98,48, 255]  → 2  (mid green)                │
-   │ [139,172,15,255] → 3  (lightest green)           │
-   └──────────────────────────────────────────────────┘
-              │
-              ▼
-3. COMPILATION: The generated sprites.rs is compiled into
-   the binary as const arrays
-   ┌──────────────────────────────────────┐
-   │ pub const PLAYER_SPRITE_FRAME_1:     │
-   │   [u8; 560] = [0,0,0,...];           │
-   │ pub const PLAYER_SPRITE_FRAME_2:     │
-   │   [u8; 560] = [0,0,0,...];           │
-   └──────────────────────────────────────┘
-              │
-              ▼
-4. EACH FRAME: Game logic selects the current animation frame
-   and calls draw_sprite at the entity's position
-   ┌──────────────────────────────────────┐
-   │ let frame = &sprites::PLAYER_SPRITE_ │
-   │   FRAME_1;                           │
-   │ fb.draw_sprite(x, y, frame, 35, 16);│
-   └──────────────────────────────────────┘
-              │
-              ▼
-5. RENDERING: draw_sprite copies each non-transparent pixel
-   into the framebuffer (5,760 bytes of bit-packed memory)
-   ┌──────────────────────────────────┐
-   │  Framebuffer: [u8; 5760]         │
-   │  ┌──┬──┬──┬──┬──┬──┬──┬──┬──┐  │
-   │  │░░│░░│░░│██│░░│░░│░░│░░│░░│  │
-   │  │  ....  player pixels ....  │  │
-   │  └──┴──┴──┴──┴──┴──┴──┴──┴──┘  │
-   └──────────────────────────────────┘
-              │
-              ▼
-6. OUTPUT: The output adapter reads the framebuffer and maps
-   each 2-bit color index to an actual RGB color for the monitor
+1. DESIGN TIME: Artist exports sprites as PNG files using the 4-color palette.
+   Placed in assets/raw/
+
+2. CONVERSION: Developer runs `cargo run -p spritec`.
+   The tool reads PNGs, validates palette, pads to 8px tiles, and encodes as 2bpp planar binary.
+   Output written to assets/processed/spaceship_0.2bpp
+
+3. COMPILATION: The game layer loads the binary using `include_bytes!`.
+   No generated source code; just raw bytes baked into the final executable.
+
+4. EACH FRAME: Game logic selects the current animation frame and calls `draw_sprite`.
+   
+5. RENDERING: `draw_sprite` iterates over tiles, and `draw_tile` decodes the bitplanes
+   row-by-row, writing pixels to the framebuffer.
 
    Index 0 → (155, 188, 15)  lightest green
    Index 1 → (139, 172, 15)  light green

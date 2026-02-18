@@ -20,7 +20,7 @@ This project is a constrained game runtime that enforces hard limits and explici
 - **Resolution**: 160 × 144 (2 bits per pixel)
 - **Memory**: 1 MB (Fixed Arena System)
 - **Timestep**: 60 FPS
-- **Tile Size**: 16 × 16
+- **Tile Size**: 8 × 8 (Sprite alignment)
 - **Level Width**: ~200 tiles
 - **Entity Limits**: 32 enemies, 64 projectiles
 
@@ -39,11 +39,12 @@ The runtime operates on a memory arena system with three primary segments:
 - `FrameBuffer::draw_u32()` for fixed-width numeric display
 
 ### Sprite Rendering
-- `FrameBuffer::draw_sprite()` for rendering arbitrary-size sprites
+- `FrameBuffer::draw_sprite()` for rendering arbitrary-size sprites (tile-aligned)
+- `FrameBuffer::draw_tile()` decodes 16-byte GameBoy-style 2bpp planar tiles
 - Supports transparency (color 0 is transparent)
 - Automatic bounds checking for safe rendering
 - Signed coordinate support for off-screen positioning
-- Build-time asset pipeline: export sprites as PNGs → `build.rs` converts to indexed byte arrays at compile time
+- Standalone asset pipeline: `tools/spritec` converts PNGs to binary `.2bpp` files
 
 ### Debug Overlay (Optional)
 Enable with `--features debug_overlay`:

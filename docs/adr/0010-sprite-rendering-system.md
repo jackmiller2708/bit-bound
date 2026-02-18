@@ -3,7 +3,7 @@
 Date: 2026-02-18
 
 ## Status
-Accepted
+Superseded by [0012 — Tile-Based Sprite Rendering](0012-tile-based-sprite-rendering.md)
 
 ## Context
 The runtime initially only supported pixel-level drawing primitives (`set_pixel`) and text rendering. To create visually rich game content, we need the ability to render multi-pixel sprites with transparency support. This is essential for player characters, enemies, and other game entities.

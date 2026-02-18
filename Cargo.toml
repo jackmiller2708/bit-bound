@@ -1,3 +1,6 @@
+[workspace]
+members = ["tools/spritec"]
+
 [package]
 name = "bit-bound"
 version = "0.1.0"
@@ -8,6 +11,3 @@ minifb = "0.28.0"
 
 [features]
 debug_overlay = []
-
-[build-dependencies]
-image = "0.25"

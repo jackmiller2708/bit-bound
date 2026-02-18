@@ -122,29 +122,51 @@ impl FrameBuffer {
         }
     }
 
-    pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &[u8], width: usize, height: usize) {
-        for row in 0..height {
-            for col in 0..width {
-                let pixel = sprite[row * width + col];
+    /// Decode and render a single 8×8 tile from 2bpp planar data.
+    ///
+    /// `tile_data` must be exactly 16 bytes: 2 bytes per row (low-plane, high-plane),
+    /// MSB-first pixel ordering (bit 7 = leftmost pixel).
+    pub fn draw_tile(&mut self, x: i32, y: i32, tile_data: &[u8]) {
+        for row in 0..8 {
+            let low = tile_data[row * 2];
+            let high = tile_data[row * 2 + 1];
 
-                // Skip transparent
-                if pixel == 0 {
+            for col in 0..8 {
+                let bit = 7 - col;
+                let index = ((low >> bit) & 1) | (((high >> bit) & 1) << 1);
+
+                // Skip transparent (index 0)
+                if index == 0 {
                     continue;
                 }
 
                 let sx = x + col as i32;
                 let sy = y + row as i32;
 
-                // Bounds check
-                if sx < 0 || sy < 0 {
+                if sx < 0 || sy < 0 || sx >= WIDTH as i32 || sy >= HEIGHT as i32 {
                     continue;
                 }
 
-                if sx >= WIDTH as i32 || sy >= HEIGHT as i32 {
-                    continue;
-                }
+                self.set_pixel(sx as usize, sy as usize, index);
+            }
+        }
+    }
 
-                self.set_pixel(sx as usize, sy as usize, pixel);
+    /// Render a composite sprite by iterating over its 8×8 tiles.
+    ///
+    /// The sprite's data is a sequence of tiles stored in row-major order
+    /// (left-to-right, top-to-bottom). Each tile is 16 bytes of 2bpp planar data.
+    pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &crate::renderer::sprite::Sprite) {
+        for ty in 0..sprite.tiles_y {
+            for tx in 0..sprite.tiles_x {
+                let tile_index = ty * sprite.tiles_x + tx;
+                let offset = tile_index * 16;
+                let tile_data = &sprite.data[offset..offset + 16];
+
+                let tile_x = x + (tx * 8) as i32;
+                let tile_y = y + (ty * 8) as i32;
+
+                self.draw_tile(tile_x, tile_y, tile_data);
             }
         }
     }

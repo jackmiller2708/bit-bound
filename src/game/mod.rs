@@ -7,8 +7,24 @@ use crate::game::enemy::Enemy;
 use crate::game::fixed_pool::FixedPool;
 use crate::game::player::Player;
 use crate::renderer::framebuffer::{FrameBuffer, HEIGHT, WIDTH};
+use crate::renderer::sprite::Sprite;
 use crate::runtime::memory::RuntimeMemory;
-use crate::sprites;
+
+const PLAYER_FRAME_1: Sprite = Sprite {
+    width: 35,
+    height: 16,
+    tiles_x: 5,
+    tiles_y: 2,
+    data: include_bytes!("../../assets/processed/spaceship_0.2bpp"),
+};
+
+const PLAYER_FRAME_2: Sprite = Sprite {
+    width: 35,
+    height: 16,
+    tiles_x: 5,
+    tiles_y: 2,
+    data: include_bytes!("../../assets/processed/spaceship_1.2bpp"),
+};
 
 pub struct GameState {
     pub player: Player,
@@ -75,12 +91,12 @@ pub fn render(state: &GameState, framebuffer: &mut FrameBuffer) {
     framebuffer.clear(0);
 
     let frame = if state.player.anim_timer % 20 < 10 {
-        &sprites::PLAYER_SPRITE_FRAME_1
+        &PLAYER_FRAME_1
     } else {
-        &sprites::PLAYER_SPRITE_FRAME_2
+        &PLAYER_FRAME_2
     };
 
-    framebuffer.draw_sprite(state.player.x as i32, state.player.y as i32, frame, 35, 16);
+    framebuffer.draw_sprite(state.player.x as i32, state.player.y as i32, frame);
 
     // Enemies
     for enemy in state.enemies.as_slice() {
