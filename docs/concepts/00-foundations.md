@@ -611,7 +611,7 @@ This array is stored in **row-major order** — the first 8 numbers are the firs
 ### In Code
 
 ```rust
-// A sprite is a compile-time constant — just bytes.
+// A sprite is a compile-time constant — generated from a PNG by build.rs.
 const FACE: [u8; 64] = [
     0,0,3,3,3,3,0,0,
     0,3,1,1,1,1,3,0,

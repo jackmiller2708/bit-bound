@@ -43,6 +43,7 @@ The runtime operates on a memory arena system with three primary segments:
 - Supports transparency (color 0 is transparent)
 - Automatic bounds checking for safe rendering
 - Signed coordinate support for off-screen positioning
+- Build-time asset pipeline: export sprites as PNGs → `build.rs` converts to indexed byte arrays at compile time
 
 ### Debug Overlay (Optional)
 Enable with `--features debug_overlay`:

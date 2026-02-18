@@ -22,6 +22,7 @@ pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &[u8], width: usize, heigh
 - **Bounds Checking**: Automatically clips sprites at screen edges, preventing out-of-bounds access
 - **Variable Size**: Supports arbitrary sprite dimensions via width/height parameters
 - **Flat Array Format**: Sprites stored as 1D byte arrays (row-major order)
+- **Build-Time Asset Pipeline**: Sprites are authored as PNG files in `assets/`, then converted to indexed byte arrays by `build.rs` using the `image` crate. The generated code is written to `src/sprites.rs`.
 
 ### Implementation Details
 - Nested loops iterate over sprite dimensions
@@ -36,12 +37,14 @@ pub fn draw_sprite(&mut self, x: i32, y: i32, sprite: &[u8], width: usize, heigh
 - **Safe**: Bounds checking prevents crashes from off-screen sprites
 - **Transparent Overlays**: Color 0 transparency enables layered sprite composition
 - **No Allocation**: Sprites are compile-time constants, no heap usage
-- **Simple Format**: Flat byte arrays are easy to author and debug
+- **Simple Format**: Flat byte arrays are easy to inspect and debug
+- **Artist-Friendly Workflow**: Sprites are authored as standard PNG files using the 4-color palette, then automatically converted at build time. No manual byte array editing required.
 
 ### Negative
 - **No Optimization**: Draws every non-transparent pixel individually (no batching)
 - **No Rotation/Scaling**: Only supports 1:1 pixel rendering
-- **Manual Sprite Data**: Sprites must be hand-authored as byte arrays
+- **Build Dependency**: The `image` crate is required as a build dependency for PNG decoding
+- **Strict Palette Enforcement**: PNGs must use exact RGBA values matching the 4-color palette; unexpected colors cause a build panic
 - **Limited Palette**: Constrained to 4 colors (0-3)
 
 ## Alternatives Considered

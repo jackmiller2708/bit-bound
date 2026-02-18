@@ -53,6 +53,7 @@ The renderer provides low-level drawing primitives:
   - `draw_sprite()`: Renders sprites with bounds checking and transparency support
   - Supports variable width/height sprites
   - Color 0 treated as transparent
+  - Build-time asset pipeline: PNGs in `assets/` → `build.rs` converts to indexed arrays → `src/sprites.rs`
 - **Color Palette**: 4-color Game Boy-inspired palette
 
 ## Runtime Module
