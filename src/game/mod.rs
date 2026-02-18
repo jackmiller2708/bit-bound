@@ -6,8 +6,8 @@ pub mod player;
 use crate::game::enemy::Enemy;
 use crate::game::fixed_pool::FixedPool;
 use crate::game::player::Player;
-use crate::memory::RuntimeMemory;
 use crate::renderer::framebuffer::{FrameBuffer, HEIGHT, WIDTH};
+use crate::runtime::memory::RuntimeMemory;
 
 // const SPRITE_W: i32 = 35;
 

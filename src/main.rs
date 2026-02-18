@@ -1,6 +1,6 @@
 use bit_bound::game::{GameState, render, update};
-use bit_bound::memory::RuntimeMemory;
 use bit_bound::renderer::framebuffer::{self, FrameBuffer};
+use bit_bound::runtime::memory::RuntimeMemory;
 
 use std::cell::UnsafeCell;
 use std::time::{Duration, Instant};
