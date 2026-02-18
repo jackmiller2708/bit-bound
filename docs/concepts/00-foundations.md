@@ -12,7 +12,7 @@
 4. [The Stack, the Heap, and Static Memory](#4-the-stack-the-heap-and-static-memory)
 5. [What Is a Pixel?](#5-what-is-a-pixel)
 6. [How Screens Display Images](#6-how-screens-display-images)
-7. [Colors — How Computers Represent Them](#7-colors--how-computers-represent-them)
+7. [How Computers Represent Colors](#7-how-computers-represent-colors)
 8. [What Is a Buffer?](#8-what-is-a-buffer)
 9. [What Is a Frame?](#9-what-is-a-frame)
 10. [What Is a Framebuffer?](#10-what-is-a-framebuffer)
@@ -40,20 +40,87 @@ A single bit:   0    or    1
 
 Computers are electronic machines. At the hardware level, they work with electrical voltages. It's extremely reliable to distinguish between two states — "high voltage" vs "low voltage" (or "current flowing" vs "no current"). Distinguishing between 10 different voltage levels would be error-prone. So the entire foundation of computing is built on this binary (two-state) system.
 
-### What Is a Byte?
+### A Bit of History: Why Binary Won
 
-A **byte** is a group of **8 bits**. It's the standard "unit" that computers work with. When people say "this file is 5 kilobytes," they mean it contains 5,000 groups of 8 bits (approximately — more on that later).
+This wasn't always obvious. Early computing pioneers had a choice: why not use 10 voltage levels (one per decimal digit) instead of just 2?
+
+The answer comes down to the physical components available at the time. The earliest electronic computers — machines like ENIAC (1945) and Colossus (1943) — were **room-sized behemoths** built from **vacuum tubes**: glass cylinders the size of a light bulb, each acting as an electronic switch. ENIAC alone used **17,468 vacuum tubes**, weighed 30 tons, and consumed 150 kilowatts of power — enough to dim the lights in an entire city block.
 
 ```
-One byte = 8 bits:
+A vacuum tube (actual size ~8 cm / 3 inches):
 
+    ┌─────────┐
+    │  ┌───┐  │
+    │  │ ● │  │     ← glass envelope with heated
+    │  │ │ │  │       filament and metal plates
+    │  └─┬─┘  │
+    │    │    │     Each one = one electronic switch
+    └────┴────┘     (roughly equivalent to one modern transistor)
+    ┌──┴──┴──┐
+    └────────┘      ← metal pins for electrical connections
+```
+
+These tubes were **unreliable** — they burned out frequently, ran extremely hot, and their electrical characteristics drifted over time. Asking a vacuum tube to distinguish between 10 precise voltage levels would have been disastrous: a tube drifting even slightly would misread a "7" as a "6" or an "8," corrupting every calculation.
+
+But distinguishing between just **two** states — "tube conducting" vs "tube not conducting," roughly 0V vs 5V — was easy and reliable even with imprecise components. There was a huge margin for error. A voltage of 3.7V or 4.2V could both be confidently read as "high" (1).
+
+Before vacuum tubes, even earlier machines used **electromechanical relays** — physical switches flipped by electromagnets. A relay is literally either open or closed, on or off. Binary is the natural language of a switch.
+
+When **transistors** replaced vacuum tubes in the late 1950s (and then **integrated circuits** packed thousands of transistors onto a single chip in the 1960s), they were far smaller and more reliable — but the binary principle remained, because the entire theoretical framework (Boolean algebra, logic gates, information theory) had already been built around two states. Today, a modern CPU contains **billions** of transistors, each one the size of a few nanometers, but each still operates as a binary switch — on or off, 0 or 1.
+
+> The irony: modern transistors *could* reliably distinguish multiple voltage levels (and some technologies like **multi-level cell flash memory** in SSDs do exactly this, storing 2–4 bits per cell). But the binary abstraction is so deeply embedded in computing architecture — from hardware design to programming languages to network protocols — that switching away would mean redesigning everything from scratch.
+
+### What Is a Byte?
+
+A **byte** is a group of **8 bits** — eight tiny switches. A byte is the standard "unit" that computers work with. When people say "this file is 5 kilobytes," they mean it contains 5,000 groups of 8 bits (approximately — more on that later).
+
+```
+One byte = 8 bits (8 switches):
+
+                      ← read this way (right to left)
   0  1  1  0  1  0  0  1
   ↑                    ↑
   bit 7 (most          bit 0 (least
   significant)         significant)
 ```
 
-With 8 bits, you can represent **256 different values** (2⁸ = 256): from `00000000` (which equals 0) to `11111111` (which equals 255).
+Notice that bits are **numbered from right to left** — bit 0 is on the far right, bit 7 is on the far left. This feels backwards at first, but it's the same convention you already know from decimal: in the number "142," the ones place is on the right, the hundreds place is on the left. We read the digits left to right, but the *positions* count up from right to left (ones → tens → hundreds). Binary follows the exact same rule: position 0 (worth 2⁰ = 1) is on the right, position 7 (worth 2⁷ = 128) is on the left.
+
+### What Does "Significant" Mean?
+
+The word **significant** here means **how much impact that bit has on the total value** — not "importance" in a general sense, but specifically **how much the number changes** if you flip that one bit.
+
+Think about decimal first. In the number **142**:
+
+```
+  1     4     2
+  ↑     ↑     ↑
+  hundreds    tens     ones
+  (most               (least
+  significant)        significant)
+```
+
+- Changing the **ones** digit (2 → 3) changes the number by just **1** (142 → 143). Small impact.
+- Changing the **hundreds** digit (1 → 2) changes the number by **100** (142 → 242). Huge impact.
+
+The hundreds digit is the **most significant** digit because flipping it causes the **largest** change. The ones digit is the **least significant** because flipping it causes the **smallest** change. "Most" and "least" are relative to **each other** — they describe which position in the number has the greatest vs smallest influence on the total value.
+
+Binary works exactly the same way, but with powers of 2 instead of powers of 10:
+
+```
+  0     1     1     0     1     0     0     1
+  ↑                                         ↑
+  bit 7                                     bit 0
+  worth 128                                 worth 1
+  (most significant bit — MSB)              (least significant bit — LSB)
+```
+
+- Flipping **bit 0** (the LSB) changes the value by **1**. Tiny impact.
+- Flipping **bit 7** (the MSB) changes the value by **128**. Massive impact.
+
+So when you see "most significant bit" (MSB) and "least significant bit" (LSB) in this documentation, it simply means the bit with the **biggest** influence on the number vs the bit with the **smallest** influence. In a byte, those are bit 7 (worth 128) and bit 0 (worth 1), respectively.
+
+With 8 bits, you can represent **256 different values** (2⁸ = 256): from `00000000` (all switches off = 0) to `11111111` (all switches on = 255).
 
 ### Why Does This Matter?
 
@@ -283,19 +350,25 @@ Your screen doesn't show a single frozen image. It **redraws** the entire screen
 
 Each complete redraw is called a **frame**. At 60 Hz, each frame lasts 16.67 milliseconds.
 
-### The Analogy: A Flipbook
-
 Imagine a flipbook — a stack of paper with slightly different drawings on each page. When you flip through them quickly, the drawings appear to move. A screen works the same way:
 
 - Each "page" is a frame
 - Each frame is a complete picture made of thousands/millions of pixels
 - Flipping 60 pages per second creates the illusion of motion
 
-The computer's job is to **produce a new page (frame) fast enough** for the screen to display it. If the computer can't produce frames fast enough, you see stuttering or lag.
+But *why* does flipping static images create the illusion of motion? Because of how your eyes and brain actually work.
+
+### How Your Eyes See Motion
+
+Your eyes don't see the world as a continuous video stream. Instead, your retina captures **discrete snapshots** — light hits the photoreceptor cells, they fire signals to the brain, and then they need a brief recovery period before they can fire again. Your brain receives these individual snapshots and **blends them together**, filling in the gaps to create the perception of smooth, continuous motion. This is called **persistence of vision** — each image lingers in your visual system for a fraction of a second, overlapping with the next one.
+
+A flipbook exploits this: if you replace one still image with a slightly different one fast enough (roughly 12+ times per second), your brain can't distinguish the individual images anymore — it perceives movement instead. Film runs at 24 frames per second. Most screens refresh at 60 Hz. Both are fast enough to completely fool the brain.
+
+A computer screen does the exact same thing — it displays one complete image (a frame), then replaces it with a slightly different one, 60 times per second. The computer's job is to **produce a new frame fast enough** for the screen to display it. If the computer can't keep up, your brain *can* tell — you perceive it as stuttering or lag, because the gaps between frames become long enough for your visual system to notice.
 
 ---
 
-## 7. Colors — How Computers Represent Them
+## 7. How Computers Represent Colors
 
 ### Modern Color: 32-bit RGBA
 
@@ -351,8 +424,6 @@ When it's time to display the image on a modern screen, each 2-bit index is look
 
 A **buffer** is a temporary holding area for data. It exists because **a producer and a consumer often operate at different speeds**, and you need somewhere to put the data in between.
 
-### Real-World Analogy
-
 Think of a YouTube video buffering:
 1. Your internet downloads video data (the **producer**)
 2. Your video player displays frames (the **consumer**)
@@ -382,9 +453,9 @@ A buffer is just **a block of memory used to temporarily hold data** between two
 A **frame** is one complete image that the screen displays. At 60 frames per second (FPS), the screen shows 60 complete images every second, each lasting ~16.67 milliseconds.
 
 ```
-Time:  0ms      16.6ms     33.3ms     50ms       66.6ms
-       │         │          │          │          │
-       ├─ Frame 1 ┤─ Frame 2 ┤─ Frame 3 ┤─ Frame 4 ┤
+Time:  0ms        16.6ms      33.3ms      50ms        66.6ms
+       │           │           │           │           │
+       ├─ Frame 1  ┤─ Frame 2  ┤─ Frame 3  ┤─ Frame 4  ┤
        │  (draw    │  (draw    │  (draw    │  (draw    │
        │  screen)  │  screen)  │  screen)  │  screen)  │
 ```
@@ -410,7 +481,7 @@ A **framebuffer** is a region of memory that holds the pixel data for one comple
 Your Game Logic                Framebuffer               Screen
 ──────────────          ─────────────────────          ──────────
 "Draw player                 [Memory block             Your eyes
- at (10, 20)"  ──────►   with pixel data]  ──────►    see the
+ at (10, 20)"   ──────►    with pixel data]  ──────►    see the
 "Draw enemy                  Row by row,                image
  at (50, 70)"               byte by byte
 ```
@@ -434,9 +505,9 @@ The framebuffer is a flat array of 5,760 bytes representing 23,040 pixels (160×
 
 **Rendering** is the process of producing a visual image from data. It's the act of converting abstract game state ("the player is at position 50, 80") into concrete pixels in the framebuffer.
 
-### The Web Analogy
+### On The Web
 
-In web development, the browser renders for you:
+The browser renders for you:
 
 ```javascript
 document.body.innerHTML = "<h1>Hello</h1>";
@@ -453,9 +524,9 @@ In bit-bound, **you are the renderer**. There is no browser, no CSS engine, no l
 
 ```rust
 // To draw a 3-pixel wide "L" shape:
-framebuffer.set_pixel(x, y,     3);  // █
-framebuffer.set_pixel(x, y + 1, 3);  // █
-framebuffer.set_pixel(x, y + 2, 3);  // █
+framebuffer.set_pixel(x, y,     3);      // █
+framebuffer.set_pixel(x, y + 1, 3);      // █
+framebuffer.set_pixel(x, y + 2, 3);      // █
 framebuffer.set_pixel(x + 1, y + 2, 3);  // ██
 framebuffer.set_pixel(x + 2, y + 2, 3);  // ███
 ```
@@ -478,7 +549,7 @@ A **tick** is one complete cycle of your game loop — all the work the game doe
 Each tick does the following, in order:
 
 ```
-┌─────────────── One Tick (16.67ms budget) ───────────────┐
+┌─────────────── One Tick (16.67ms budget) ────────────────┐
 │                                                          │
 │  1. Reset the frame arena (clear temporary memory)       │
 │  2. Read input (what buttons is the player pressing?)    │

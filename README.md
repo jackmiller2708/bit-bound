@@ -58,4 +58,22 @@ Displays real-time metrics:
 
 ## Documentation
 
-See the `/docs` directory for detailed architecture and ADRs.
+### Concept Docs
+
+Start with [Foundations](docs/concepts/00-foundations.md), then follow the numbered order:
+
+| #   | Document                                                                       | Covers                                                                            |
+| --- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| 00  | [Foundations](docs/concepts/00-foundations.md)                                 | Bits, bytes, binary, memory, pixels, buffers, frames, ticks, sprites, bitwise ops |
+| 01  | [Hardware-Constrained Design](docs/concepts/01-hardware-constrained-design.md) | Constraint philosophy, real hardware comparisons (Game Boy, NES, Atari)           |
+| 02  | [Memory Arena](docs/concepts/02-memory-arena.md)                               | Arena/bump allocation, alignment, multi-arena partitioning                        |
+| 03  | [Static Memory Patterns](docs/concepts/03-static-memory-patterns.md)           | Binary segments, `UnsafeCell`, `Global<T>` wrapper                                |
+| 04  | [FrameBuffer & Bit-Packing](docs/concepts/04-framebuffer-bit-packing.md)       | Framebuffers, 2-bit pixel packing, set/get pixel                                  |
+| 05  | [Sprite Rendering](docs/concepts/05-sprite-rendering.md)                       | Sprite data, draw_sprite algorithm, transparency, clipping                        |
+| 06  | [Fixed Timestep](docs/concepts/06-fixed-timestep.md)                           | Game loops, determinism, tick-based time                                          |
+| 07  | [Fixed-Capacity Entities](docs/concepts/07-fixed-capacity-entities.md)         | Object pooling, fixed arrays, entity budgets                                      |
+| 08  | [Debug Overlays](docs/concepts/08-debug-overlays.md)                           | Bitmap fonts, conditional compilation, Cargo features                             |
+
+### Architecture Decision Records
+
+See [`docs/adr/`](docs/adr/) for the full set of ADRs documenting design decisions.
